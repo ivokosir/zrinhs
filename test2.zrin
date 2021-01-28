@@ -1,0 +1,4 @@
+id = a -> a;
+some_string = "some_string";
+id some_string;
+0

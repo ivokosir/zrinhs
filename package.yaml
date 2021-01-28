@@ -1,0 +1,29 @@
+name: zrin
+version: 0.1.0.0
+github: "ivokosir/zrin"
+license: BSD3
+author: "Ivo Kosir"
+maintainer: "ivo.kosir93@gmail.com"
+copyright: "2021 Ivo Kosir"
+
+extra-source-files:
+  - README.md
+
+description: Please see the README on GitHub at <https://github.com/ivokosir/zrin>
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson == 1.*
+  - bytestring
+  - containers
+  - mtl == 2.*
+  - optparse-applicative
+  - parsec == 3.*
+
+ghc-options:
+  - -W
+  - -Wcompat
+
+executable:
+  main: Main.hs
+  source-dirs: src
