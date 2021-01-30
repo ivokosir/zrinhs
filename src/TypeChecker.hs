@@ -15,7 +15,6 @@ data StateData = StateData
     requested :: Map String IncompleteType,
     errors :: [Error]
   }
-  deriving (Eq, Show)
 
 initialState = StateData empty empty []
 
@@ -69,12 +68,12 @@ check e = do
   let expected = getType e
 
   (newBase, newType) <- case base e of
-    (Block es e) -> do
+    Block es e -> do
       es <- mapM check es
       e <- check (setType expected e)
 
       return (Block es e, getType e)
-    (Definition name e) -> do
+    Definition name e -> do
       requested <- getRequested name
       e <- check (setType (expected <> requested) e)
 
@@ -82,21 +81,21 @@ check e = do
       setNameType name type_
 
       return (Definition name e, type_)
-    (IfThenElse cond then_ else_) -> do
+    IfThenElse cond then_ else_ -> do
       cond <- check (setType (incomplete TBool) cond)
       then_ <- check (setType expected then_)
       let type_ = getType then_
       else_ <- check (setType type_ else_)
 
       return (IfThenElse cond then_ else_, type_)
-    (Operation op lhs rhs) -> do
+    Operation op lhs rhs -> do
       let (result, expectedLhs, expectedRhs) = operatonTypes op
 
       lhs <- check (setType (incomplete expectedLhs) lhs)
       rhs <- check (setType (incomplete expectedRhs) rhs)
 
       return (Operation op lhs rhs, incomplete result)
-    (Function param body) -> do
+    Function param body -> do
       (retType, expectedParamType) <- case incompleteRetAndParam expected of
         Just (retType, paramType) -> return (retType, paramType)
         Nothing -> do
@@ -112,7 +111,7 @@ check e = do
       let type_ = incompleteFunction paramType (getType body)
 
       return (Function param body, type_)
-    (Call caller arg) -> do
+    Call caller arg -> do
       arg <- check arg
 
       caller <- check (setType (incompleteFunction expected (getType arg)) caller)
@@ -124,12 +123,12 @@ check e = do
         Nothing -> do
           addError caller ("expected a function, got '" ++ show callerType ++ "'")
           return (Call caller arg, incompleteUnknown)
-    (Identifier name) -> do
+    Identifier name -> do
       nameType <- getNameType name
       let type_ = nameType <> expected
       request name type_
       return (Identifier name, type_)
-    (Literal c) -> return (Literal c, incomplete (constType c))
+    Literal c -> return (Literal c, incomplete (constType c))
 
   newType <- expectType e newType expected
 

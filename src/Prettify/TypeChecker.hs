@@ -39,8 +39,8 @@ prettify_ indent expression =
       prettifySub = prettify_ nextIndent
       type_ = extra expression
    in case base expression of
-        (Block [] e) -> "(" ++ prettifySub e ++ ")"
-        (Block es e) ->
+        Block [] e -> "(" ++ prettifySub e ++ ")"
+        Block es e ->
           let seperator = ";\n" ++ nextIndent
            in "(\n"
                 ++ nextIndent
@@ -50,8 +50,8 @@ prettify_ indent expression =
                 ++ "\n"
                 ++ indent
                 ++ ")"
-        (Definition name e) -> name ++ " : " ++ prettifyType type_ ++ " = " ++ prettify_ indent e
-        (IfThenElse c t e) ->
+        Definition name e -> name ++ " : " ++ prettifyType type_ ++ " = " ++ prettify_ indent e
+        IfThenElse c t e ->
           "if\n"
             ++ nextIndent
             ++ prettifySub c
@@ -68,16 +68,16 @@ prettify_ indent expression =
             ++ "\n"
             ++ indent
             ++ "end"
-        (Operation op lhs rhs) ->
+        Operation op lhs rhs ->
           prettifySub lhs
             ++ " "
             ++ prettifyOperation op
             ++ " "
             ++ prettifySub rhs
-        (Function param e) -> param ++ " -> " ++ prettify_ indent e
-        (Call caller arg) -> prettifySub caller ++ " " ++ prettifySub arg
-        (Identifier name) -> name
-        (Literal const) -> prettifyConst const
+        Function param e -> param ++ " -> " ++ prettify_ indent e
+        Call caller arg -> prettifySub caller ++ " " ++ prettifySub arg
+        Identifier name -> name
+        Literal const -> prettifyConst const
 
 prettify :: Expression -> String
 prettify = prettify_ ""

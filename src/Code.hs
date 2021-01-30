@@ -37,7 +37,7 @@ data Function = Function Name Type Name Type [Block] deriving (Eq, Show)
 data Module = Module String [Function] deriving (Eq, Show)
 
 instance ToJSON Name where
-  toJSON (IName i) = toJSON i
+  toJSON (IName i) = toJSON ("i-" ++ show i)
   toJSON (Name name) = toJSON name
 
 instance ToJSON Constant where
@@ -55,7 +55,7 @@ instance ToJSON Type where
 
 instance ToJSON Value where
   toJSON (Const c) = toJSON c
-  toJSON (Reference name type_) = object ["name" .= name, "type" .= type_]
+  toJSON (Reference name _) = object ["name" .= name]
 
 instance ToJSON Operation where
   toJSON Or = "and"
@@ -73,15 +73,15 @@ instance ToJSON Operation where
   toJSON Remainder = "srem"
 
 instance ToJSON Instruction where
-  toJSON (Instruction name type_ base) =
-    let start = ["name" .= name, "type" .= type_]
+  toJSON (Instruction name _ base) =
+    let start = ["name" .= name]
         basePairs = case base of
           Binary op lhs rhs ->
             ["tag" .= "binary", "op" .= op, "lhs" .= lhs, "rhs" .= rhs]
           Call caller arg ->
-            ["tag" .= "binary", "caller" .= caller, "arg" .= arg]
+            ["tag" .= "call", "caller" .= caller, "arg" .= arg]
           Phi then_ thenLabel else_ elseLabel ->
-            [ "tag" .= "binary",
+            [ "tag" .= "phi",
               "then" .= then_,
               "then_label" .= thenLabel,
               "else" .= else_,

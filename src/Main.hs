@@ -1,6 +1,7 @@
 module Main where
 
 import CodeGenerator
+import Control.Monad.Except
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Error
@@ -74,30 +75,33 @@ compileFile fname = do
 
   log "\n\n=====  Input  =====\n"
   log source
-  case parse fname source of
-    Right ast -> do
-      log "\n\n=====  Parse  =====\n"
-      log (Prettify.Parser.prettify ast)
 
-      case resolve ast of
-        (Right ast) -> do
-          log "\n\n===== Resolve =====\n"
-          log (Prettify.Parser.prettify ast)
+  result <-
+    runExceptT
+      ( do
+          let l = liftIO . log
+          ast <- liftEither (parse fname source)
+          l "\n\n=====  Parse  =====\n"
+          l (Prettify.Parser.prettify ast)
 
-          case checkTypes ast of
-            (Right ast) -> do
-              log "\n\n=====  Type   =====\n"
-              log (Prettify.TypeChecker.prettify ast)
+          ast <- liftEither (resolve ast)
+          l "\n\n===== Resolve =====\n"
+          l (Prettify.Parser.prettify ast)
 
-              let code = generateCode ast
+          ast <- liftEither (checkTypes ast)
+          l "\n\n=====  Type   =====\n"
+          l (Prettify.TypeChecker.prettify ast)
 
-              log "\n\n=====  Code   =====\n"
-              log (Prettify.CodeGenerator.prettify code)
+          let code = generateCode ast
+          l "\n\n=====  Code   =====\n"
+          l (Prettify.CodeGenerator.prettify code)
 
-              write (encode code)
-            (Left errors) -> printErrors source errors
-        (Left errors) -> printErrors source errors
-    Left error -> printParseError source error
+          return code
+      )
+
+  case result of
+    Right code -> write (encode code)
+    Left errors -> printErrors source errors
 
 main :: IO ()
 main = compileFile "test2.zrin"

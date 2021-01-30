@@ -2,6 +2,7 @@ module Parser (Expression, Extra (..), parse) where
 
 import AST hiding (Base, Expression)
 import qualified AST as E
+import Error
 import Text.Parsec hiding (parse)
 import qualified Text.Parsec as P (parse)
 import Text.Parsec.Expr
@@ -167,5 +168,7 @@ primary =
           <$> identifier
    in withPosition primary_ <|> block
 
-parse :: SourceName -> String -> Either ParseError Expression
-parse = P.parse parser
+parse :: SourceName -> String -> Either [Error] Expression
+parse name source = case P.parse parser name source of
+  Right e -> Right e
+  Left error -> Left [ParseError error]

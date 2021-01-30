@@ -12,7 +12,6 @@ data StateData = StateData
     scope :: Map String String,
     errors :: [Error]
   }
-  deriving (Eq, Show)
 
 type S = State StateData
 
