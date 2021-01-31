@@ -1,14 +1,35 @@
-a = 1 + 2 + 3;
+foo_func = one -> (
+  a = one + 2 + 3;
 
-aref = a;
+  aref = a;
 
-qwer = aref * (2 + 1) - 4;
+  qwer = aref * (2 + 1) - 4;
 
-ref = (
-  bo = false or false;
-  test = if bo then 3 + 2 else 2 end;
-  ref = bo or test > 2;
-  ref = true and ref
+  ref = (
+    bo = false or qwer > 5;
+    test = if
+      bo
+    then
+      if
+        one == 1
+      then
+        (
+          special = one + 1;
+          special * 2
+        )
+      else
+        (
+          other_special = one - 1;
+          other_special * 2
+        )
+      end
+    else
+      2
+    end;
+    ref = bo or test > 2;
+    ref = true and ref
+  );
+  ref
 );
 
 increment_then_twice = a -> (

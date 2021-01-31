@@ -21,12 +21,13 @@ import TypeChecker
 import Prelude hiding (lookup)
 
 data StateData = StateData
-  { unnamedCounter :: Word,
+  { scope :: Map String Value,
     requestedName :: Maybe String,
-    scope :: Map String Value,
+    nextLabel :: Word,
+    nextIName :: Word,
     functions :: [Function],
+    currentLabel :: Label,
     currentBlocks :: [Block],
-    currentLabel :: Name,
     currentInstructions :: [Instruction]
   }
   deriving (Eq, Show)
@@ -35,21 +36,28 @@ type S = State StateData
 
 initialState =
   StateData
-    { unnamedCounter = 1,
-      scope = empty,
+    { scope = empty,
       requestedName = Nothing,
+      nextLabel = 1,
+      nextIName = 0,
       functions = [],
+      currentLabel = Label 0,
       currentBlocks = [],
-      currentLabel = IName 0,
       currentInstructions = []
     }
 
 generateName :: Maybe String -> S Name
 generateName (Just name) = return (Name name)
 generateName Nothing = do
-  i <- gets unnamedCounter
-  modify' (\s -> s {unnamedCounter = unnamedCounter s + 1})
+  i <- gets nextIName
+  modify' (\s -> s {nextIName = i + 1})
   return (IName i)
+
+generateLabel :: S Label
+generateLabel = do
+  label <- gets nextLabel
+  modify' (\s -> s {nextLabel = label + 1})
+  return (Label label)
 
 takeRequestedName :: S (Maybe String)
 takeRequestedName = do
@@ -61,19 +69,19 @@ setRequestedName :: Maybe String -> S ()
 setRequestedName name = modify' (\s -> s {requestedName = name})
 
 addInstruction :: Instruction -> S Value
-addInstruction instruction@(Instruction name type_ _) = do
+addInstruction instruction@(Instruction name _) = do
   modify' (\s -> s {currentInstructions = currentInstructions s ++ [instruction]})
-  return (Reference name type_)
+  return (Reference name)
 
-terminateBlock :: Terminator -> Name -> S ()
+terminateBlock :: Terminator -> Label -> S ()
 terminateBlock terminator nextLabel = do
   modify'
     ( \s ->
         let block = Block (currentLabel s) (currentInstructions s) terminator
          in s
-              { currentBlocks = currentBlocks s ++ [block],
-                currentInstructions = [],
-                currentLabel = nextLabel
+              { currentLabel = nextLabel,
+                currentBlocks = currentBlocks s ++ [block],
+                currentInstructions = []
               }
     )
 
@@ -108,31 +116,33 @@ generate (E.Expression (E.Definition name e) _) = do
   setName bestName v
 
   return v
-generate (E.Expression (E.IfThenElse cond then_ else_) type_) = do
+generate (E.Expression (E.IfThenElse cond then_ else_) _) = do
   requestedName <- takeRequestedName
 
   condValue <- withScope (generate cond)
-  thenLabel <- generateName Nothing
-  elseLabel <- generateName Nothing
+  thenLabel <- generateLabel
+  elseLabel <- generateLabel
   terminateBlock (CondBr condValue thenLabel elseLabel) thenLabel
 
   thenValue <- withScope (generate then_)
-  endLabel <- generateName Nothing
+  thenLabel <- gets currentLabel
+  endLabel <- generateLabel
   terminateBlock (Br endLabel) elseLabel
 
   elseValue <- withScope (generate else_)
+  elseLabel <- gets currentLabel
   terminateBlock (Br endLabel) endLabel
 
   phiName <- generateName requestedName
-  addInstruction (Instruction phiName type_ (Phi thenValue thenLabel elseValue elseLabel))
-generate (E.Expression (E.Operation op lhs rhs) type_) = do
+  addInstruction (Instruction phiName (Phi thenValue thenLabel elseValue elseLabel))
+generate (E.Expression (E.Operation op lhs rhs) _) = do
   requestedName <- takeRequestedName
 
   lhsValue <- withScope (generate lhs)
   rhsValue <- withScope (generate rhs)
 
   name <- generateName requestedName
-  addInstruction (Instruction name type_ (Binary op lhsValue rhsValue))
+  addInstruction (Instruction name (Binary op lhsValue rhsValue))
 generate (E.Expression (E.Function param body) type_) = do
   requestedName <- takeRequestedName
   name <- generateName requestedName
@@ -142,17 +152,17 @@ generate (E.Expression (E.Function param body) type_) = do
         let fs = generateFunction name type_ param body
          in s {functions = functions s ++ fs}
     )
-  return (Reference name type_)
-generate (E.Expression (E.Call caller arg) type_) = do
+  return (Reference name)
+generate (E.Expression (E.Call caller arg) _) = do
   requestedName <- takeRequestedName
 
   argValue <- withScope (generate arg)
   callerValue <- withScope (generate caller)
 
   name <- generateName requestedName
-  addInstruction (Instruction name type_ (Call callerValue argValue))
-generate (E.Expression (E.Identifier name) type_) =
-  gets (fromMaybe (Reference (Name name) type_) . lookup name . scope)
+  addInstruction (Instruction name (Call callerValue argValue))
+generate (E.Expression (E.Identifier name) _) =
+  gets (fromMaybe (Reference (Name name)) . lookup name . scope)
 generate (E.Expression (E.Literal c) _) = return (Const c)
 
 generateFunction :: Name -> Type -> String -> Expression -> [Function]

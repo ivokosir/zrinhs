@@ -108,7 +108,7 @@ check e = do
 
       body <- check (setType retType body)
 
-      let type_ = incompleteFunction paramType (getType body)
+      let type_ = incompleteFunction (getType body) paramType
 
       return (Function param body, type_)
     Call caller arg -> do
@@ -139,7 +139,8 @@ type Expression = E.Expression Type
 converge :: IncompleteExpression -> S IncompleteExpression
 converge old = do
   new <- check old
-  if old == new
+  es <- gets errors
+  if old == new || not (null es)
     then return new
     else converge new
 

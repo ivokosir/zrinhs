@@ -115,7 +115,7 @@ instance Show Type where
   show TBool = "bool"
   show TInt = "int"
   show TString = "string"
-  show (TFunction ret param) = show ret ++ " -> " ++ show param
+  show (TFunction ret param) = show param ++ " -> " ++ show ret
 
 constType :: Constant -> Type
 constType CUnit = TUnit

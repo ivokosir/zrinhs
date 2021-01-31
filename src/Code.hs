@@ -3,6 +3,7 @@
 
 module Code
   ( Name (..),
+    Label (..),
     Module (..),
     Function (..),
     Block (..),
@@ -18,27 +19,32 @@ import Data.Aeson hiding (Value)
 
 data Name = IName Word | Name String deriving (Eq, Show)
 
-data Value = Const Constant | Reference Name Type deriving (Eq, Show)
+newtype Label = Label Word deriving (Eq, Show)
+
+data Value = Const Constant | Reference Name deriving (Eq, Show)
 
 data InstructionBase
   = Binary Operation Value Value
   | Call Value Value
-  | Phi Value Name Value Name
+  | Phi Value Label Value Label
   deriving (Eq, Show)
 
-data Instruction = Instruction Name Type InstructionBase deriving (Eq, Show)
+data Instruction = Instruction Name InstructionBase deriving (Eq, Show)
 
-data Terminator = Ret Value | CondBr Value Name Name | Br Name deriving (Eq, Show)
+data Terminator = Ret Value | CondBr Value Label Label | Br Label deriving (Eq, Show)
 
-data Block = Block Name [Instruction] Terminator deriving (Eq, Show)
+data Block = Block Label [Instruction] Terminator deriving (Eq, Show)
 
 data Function = Function Name Type Name Type [Block] deriving (Eq, Show)
 
 data Module = Module String [Function] deriving (Eq, Show)
 
 instance ToJSON Name where
-  toJSON (IName i) = toJSON ("i-" ++ show i)
+  toJSON (IName i) = toJSON i
   toJSON (Name name) = toJSON name
+
+instance ToJSON Label where
+  toJSON (Label i) = toJSON i
 
 instance ToJSON Constant where
   toJSON CUnit = Null
@@ -55,7 +61,7 @@ instance ToJSON Type where
 
 instance ToJSON Value where
   toJSON (Const c) = toJSON c
-  toJSON (Reference name _) = object ["name" .= name]
+  toJSON (Reference name) = object ["name" .= name]
 
 instance ToJSON Operation where
   toJSON Or = "and"
@@ -73,7 +79,7 @@ instance ToJSON Operation where
   toJSON Remainder = "srem"
 
 instance ToJSON Instruction where
-  toJSON (Instruction name _ base) =
+  toJSON (Instruction name base) =
     let start = ["name" .= name]
         basePairs = case base of
           Binary op lhs rhs ->

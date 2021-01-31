@@ -1,7 +1,7 @@
 module Prettify.CodeGenerator (prettify) where
 
 import AST hiding (Base (..))
-import CodeGenerator
+import Code
 import Data.Char (toLower)
 
 prettifyConst :: Constant -> String
@@ -15,6 +15,9 @@ prettifyName :: Name -> String
 prettifyName (IName i) = "%" ++ show i
 prettifyName (Name s) = "%\"" ++ s ++ "\""
 
+prettifyLabel :: Label -> String
+prettifyLabel (Label i) = show i
+
 prettifyType :: Type -> String
 prettifyType TUnit = "void"
 prettifyType TBool = "i1"
@@ -23,51 +26,38 @@ prettifyType TString = "i8*"
 prettifyType (TFunction ret arg) = prettifyType ret ++ "(" ++ prettifyType arg ++ ")"
 
 prettifyValue :: Value -> String
-prettifyValue (Reference name _) = prettifyName name
+prettifyValue (Reference name) = prettifyName name
 prettifyValue (Const c) = prettifyConst c
 
-prettifyArg :: Value -> String
-prettifyArg value =
-  let type_ = case value of
-        Reference _ type_ -> type_
-        Const c -> constType c
-   in prettifyType type_ ++ " " ++ prettifyValue value
-
-prettifyInstructionBase :: InstructionBase -> Type -> String
-prettifyInstructionBase (Binary op lhs rhs) type_ =
+prettifyInstructionBase :: InstructionBase -> String
+prettifyInstructionBase (Binary op lhs rhs) =
   map toLower (show op)
-    ++ " "
-    ++ prettifyType type_
     ++ " "
     ++ prettifyValue lhs
     ++ " "
     ++ prettifyValue rhs
-prettifyInstructionBase (Call caller callee) type_ =
+prettifyInstructionBase (Call caller callee) =
   "call "
-    ++ prettifyType type_
-    ++ " "
     ++ prettifyValue caller
     ++ "("
-    ++ prettifyArg callee
+    ++ prettifyValue callee
     ++ ")"
-prettifyInstructionBase (Phi value1 label1 value2 label2) type_ =
+prettifyInstructionBase (Phi value1 label1 value2 label2) =
   "phi "
-    ++ prettifyType type_
-    ++ " "
     ++ prettifyValue value1
     ++ " "
-    ++ prettifyName label1
+    ++ prettifyLabel label1
     ++ " "
     ++ prettifyValue value2
     ++ " "
-    ++ prettifyName label2
+    ++ prettifyLabel label2
 
 prettifyInstruction :: Instruction -> String
-prettifyInstruction (Instruction name t i) =
+prettifyInstruction (Instruction name i) =
   "  "
     ++ prettifyName name
     ++ " = "
-    ++ prettifyInstructionBase i t
+    ++ prettifyInstructionBase i
     ++ "\n"
 
 prettifyTerminator :: Terminator -> String
@@ -75,17 +65,17 @@ prettifyTerminator (CondBr cond rhs lhs) =
   "  cond_br "
     ++ prettifyValue cond
     ++ " "
-    ++ prettifyName rhs
+    ++ prettifyLabel rhs
     ++ " "
-    ++ prettifyName lhs
+    ++ prettifyLabel lhs
     ++ "\n"
 prettifyTerminator (Ret v) = "  ret " ++ prettifyValue v ++ "\n"
-prettifyTerminator (Br br) = "  br " ++ prettifyName br ++ "\n"
+prettifyTerminator (Br br) = "  br " ++ prettifyLabel br ++ "\n"
 
 prettifyBlock :: Block -> String
 prettifyBlock (Block label is t) =
-  prettifyName label
-    ++ "\n"
+  prettifyLabel label
+    ++ ":\n"
     ++ concatMap prettifyInstruction is
     ++ prettifyTerminator t
 
