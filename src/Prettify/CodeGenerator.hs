@@ -1,13 +1,14 @@
 module Prettify.CodeGenerator (prettify) where
 
-import AST hiding (Base (..))
+import AST (Constant (..), Type (..))
 import Code
 import Data.Char (toLower)
+import Data.List (intercalate)
 
 prettifyConst :: Constant -> String
 prettifyConst CUnit = "null"
-prettifyConst (CBool True) = "1"
-prettifyConst (CBool False) = "0"
+prettifyConst (CBool True) = "true"
+prettifyConst (CBool False) = "false"
 prettifyConst (CInt i) = show i
 prettifyConst (CString s) = "\"" ++ s ++ "\""
 
@@ -24,6 +25,7 @@ prettifyType TBool = "i1"
 prettifyType TInt = "i32"
 prettifyType TString = "i8*"
 prettifyType (TFunction ret arg) = prettifyType ret ++ "(" ++ prettifyType arg ++ ")"
+prettifyType (TTuple ts) = "{" ++ intercalate ", " (fmap prettifyType ts) ++ "}"
 
 prettifyValue :: Value -> String
 prettifyValue (Reference name) = prettifyName name
@@ -51,6 +53,8 @@ prettifyInstructionBase (Phi value1 label1 value2 label2) =
     ++ prettifyValue value2
     ++ " "
     ++ prettifyLabel label2
+prettifyInstructionBase (Struct vs) =
+  "struct {" ++ intercalate ", " (fmap prettifyValue vs) ++ "}"
 
 prettifyInstruction :: Instruction -> String
 prettifyInstruction (Instruction name i) =

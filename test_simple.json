@@ -1,0 +1,129 @@
+{
+    "functions": [
+        {
+            "blocks": [
+                {
+                    "instructions": [
+                        {
+                            "lhs": {
+                                "name": "one"
+                            },
+                            "name": 0,
+                            "op": "add",
+                            "rhs": 2,
+                            "tag": "binary"
+                        },
+                        {
+                            "lhs": {
+                                "name": 0
+                            },
+                            "name": "a",
+                            "op": "add",
+                            "rhs": 3,
+                            "tag": "binary"
+                        },
+                        {
+                            "lhs": {
+                                "name": "one"
+                            },
+                            "name": 1,
+                            "op": "sgt",
+                            "rhs": 1,
+                            "tag": "binary"
+                        }
+                    ],
+                    "label": 0,
+                    "terminator": {
+                        "cond": {
+                            "name": 1
+                        },
+                        "else": 2,
+                        "tag": "cond_br",
+                        "then": 1
+                    }
+                },
+                {
+                    "instructions": [
+                        {
+                            "lhs": {
+                                "name": "a"
+                            },
+                            "name": 2,
+                            "op": "add",
+                            "rhs": 4,
+                            "tag": "binary"
+                        }
+                    ],
+                    "label": 1,
+                    "terminator": {
+                        "label": 3,
+                        "tag": "br"
+                    }
+                },
+                {
+                    "instructions": [],
+                    "label": 2,
+                    "terminator": {
+                        "label": 3,
+                        "tag": "br"
+                    }
+                },
+                {
+                    "instructions": [
+                        {
+                            "else": {
+                                "name": "a"
+                            },
+                            "else_label": 2,
+                            "name": 3,
+                            "tag": "phi",
+                            "then": {
+                                "name": 2
+                            },
+                            "then_label": 1
+                        }
+                    ],
+                    "label": 3,
+                    "terminator": {
+                        "tag": "ret",
+                        "value": {
+                            "name": 3
+                        }
+                    }
+                }
+            ],
+            "name": "foo_func",
+            "param": "one",
+            "param_type": "i32",
+            "ret_type": "i32"
+        },
+        {
+            "blocks": [
+                {
+                    "instructions": [
+                        {
+                            "arg": 1,
+                            "caller": {
+                                "name": "foo_func"
+                            },
+                            "name": 0,
+                            "tag": "call"
+                        }
+                    ],
+                    "label": 0,
+                    "terminator": {
+                        "tag": "ret",
+                        "value": {
+                            "name": 0
+                        }
+                    }
+                }
+            ],
+            "name": "main",
+            "param": "",
+            "param_type": "void",
+            "ret_type": "i32"
+        }
+    ],
+    "name": "module"
+}

@@ -1,0 +1,31 @@
+{
+    "name": "module",
+    "functions": [
+        {
+            "blocks": [
+                {
+                    "instructions": [
+                        {
+                            "tag": "struct",
+                            "values": [
+                                1,
+                                true,
+                                5
+                            ],
+                            "name": "some_tuple"
+                        }
+                    ],
+                    "label": 0,
+                    "terminator": {
+                        "tag": "ret",
+                        "value": 0
+                    }
+                }
+            ],
+            "param_type": "void",
+            "ret_type": "i32",
+            "name": "main",
+            "param": ""
+        }
+    ]
+}

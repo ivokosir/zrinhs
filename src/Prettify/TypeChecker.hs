@@ -1,6 +1,6 @@
 module Prettify.TypeChecker (prettify) where
 
-import AST hiding (Expression)
+import AST
 import Data.List (intercalate)
 import TypeChecker
 
@@ -32,6 +32,7 @@ prettifyType TBool = "Bool"
 prettifyType TInt = "Int"
 prettifyType TString = "String"
 prettifyType (TFunction ret param) = prettifyType ret ++ " -> " ++ prettifyType param
+prettifyType (TTuple ts) = "(" ++ intercalate ", " (fmap prettifyType ts) ++ ")"
 
 prettify_ :: String -> Expression -> String
 prettify_ indent expression =
@@ -48,6 +49,13 @@ prettify_ indent expression =
                 ++ seperator
                 ++ prettifySub e
                 ++ "\n"
+                ++ indent
+                ++ ")"
+        Tuple es ->
+          let seperator = ",\n" ++ nextIndent
+           in "(\n"
+                ++ nextIndent
+                ++ intercalate seperator (fmap prettifySub es)
                 ++ indent
                 ++ ")"
         Definition name e -> name ++ " : " ++ prettifyType type_ ++ " = " ++ prettify_ indent e

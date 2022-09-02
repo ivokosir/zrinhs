@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6882ca79033bbdf93d0d09b79df9d62e528390da07a41da44ed0e8bd531a5e95
+-- hash: 103103cc8593730f2121c37f035c1343cffb216e520a024f264415c15b2c960c
 
 name:           zrin
 version:        0.1.0.0
@@ -13,7 +13,7 @@ homepage:       https://github.com/ivokosir/zrin#readme
 bug-reports:    https://github.com/ivokosir/zrin/issues
 author:         Ivo Kosir
 maintainer:     ivo.kosir93@gmail.com
-copyright:      2021 Ivo Kosir
+copyright:      2022 Ivo Kosir
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -28,6 +28,7 @@ executable zrin
   main-is: Main.hs
   other-modules:
       AST
+      ClosureConverter
       Code
       CodeGenerator
       Error
@@ -42,11 +43,11 @@ executable zrin
       src
   ghc-options: -W -Wcompat
   build-depends:
-      aeson ==1.*
+      aeson ==2.*
     , base >=4.7 && <5
     , bytestring
     , containers
-    , mtl ==2.*
     , optparse-applicative
     , parsec ==3.*
+    , transformers
   default-language: Haskell2010

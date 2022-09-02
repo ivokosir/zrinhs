@@ -1,7 +1,8 @@
 module Main where
 
 import CodeGenerator
-import Control.Monad.Except
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Except
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Error
@@ -15,7 +16,8 @@ import System.IO
 import TypeChecker
 
 data Data = Data
-  { sourceContents :: String,
+  { fileName :: String,
+    sourceContents :: String,
     writeFunction :: B.ByteString -> IO (),
     logFunction :: String -> IO ()
   }
@@ -39,7 +41,7 @@ getData = do
           then B.putStr
           else B.writeFile outputFilePath
 
-  return (Data source write log)
+  return (Data inputFilePath source write log)
   where
     options =
       (,,)
@@ -69,39 +71,35 @@ getData = do
 
     optionParser = info (options <**> helper) description
 
-compileFile :: String -> IO ()
-compileFile fname = do
-  (Data source write log) <- getData
+main :: IO ()
+main = do
+  (Data fname source write log) <- getData
 
   log "\n\n=====  Input  =====\n"
   log source
 
-  result <-
-    runExceptT
-      ( do
-          let l = liftIO . log
-          ast <- liftEither (parse fname source)
-          l "\n\n=====  Parse  =====\n"
-          l (Prettify.Parser.prettify ast)
+  log <- return (lift . log)
+  let runPasses = do
+        ast <- except (parse fname source)
+        log "\n\n=====  Parse  =====\n"
+        log (Prettify.Parser.prettify ast)
 
-          ast <- liftEither (resolve ast)
-          l "\n\n===== Resolve =====\n"
-          l (Prettify.Parser.prettify ast)
+        ast <- except (resolve ast)
+        log "\n\n===== Resolve =====\n"
+        log (Prettify.Parser.prettify ast)
 
-          ast <- liftEither (checkTypes ast)
-          l "\n\n=====  Type   =====\n"
-          l (Prettify.TypeChecker.prettify ast)
+        ast <- except (checkTypes ast)
+        log "\n\n=====  Type   =====\n"
+        log (Prettify.TypeChecker.prettify ast)
 
-          let code = generateCode ast
-          l "\n\n=====  Code   =====\n"
-          l (Prettify.CodeGenerator.prettify code)
+        let code = generateCode ast
+        log "\n\n=====  Code   =====\n"
+        log (Prettify.CodeGenerator.prettify code)
 
-          return code
-      )
+        return code
+
+  result <- runExceptT runPasses
 
   case result of
     Right code -> write (encode code)
     Left errors -> printErrors source errors
-
-main :: IO ()
-main = compileFile "test2.zrin"

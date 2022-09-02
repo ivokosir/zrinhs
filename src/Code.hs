@@ -27,6 +27,7 @@ data InstructionBase
   = Binary Operation Value Value
   | Call Value Value
   | Phi Value Label Value Label
+  | Struct [Value]
   deriving (Eq, Show)
 
 data Instruction = Instruction Name InstructionBase deriving (Eq, Show)
@@ -57,7 +58,8 @@ instance ToJSON Type where
   toJSON TBool = "i1"
   toJSON TInt = "i32"
   toJSON TString = "i8*"
-  toJSON (TFunction ret arg) = object ["ret" .= ret, "param" .= arg]
+  toJSON (TFunction ret arg) = object ["tag" .= "function", "ret" .= ret, "param" .= arg]
+  toJSON (TTuple ts) = object ["tag" .= "tuple", "types" .= ts]
 
 instance ToJSON Value where
   toJSON (Const c) = toJSON c
@@ -93,6 +95,7 @@ instance ToJSON Instruction where
               "else" .= else_,
               "else_label" .= elseLabel
             ]
+          Struct vs -> ["tag" .= "struct", "values" .= vs]
      in object (start ++ basePairs)
 
 instance ToJSON Terminator where

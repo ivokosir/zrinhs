@@ -1,7 +1,7 @@
 module Resolver where
 
-import AST hiding (Expression)
-import Control.Monad.State (State, gets, modify', runState)
+import AST
+import Control.Monad.Trans.State.Strict (State, gets, modify', runState)
 import Data.Map.Strict (Map, empty, insert, lookup)
 import Error
 import Parser
@@ -57,6 +57,7 @@ resolve' e = do
               e <- resolve' e
               return (Block es e)
           )
+      Tuple es -> Tuple <$> mapM (withScope . resolve') es
       Definition name e -> do
         uniqueName <- generateName name
         e <- withScope (resolve' e)

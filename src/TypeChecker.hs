@@ -1,8 +1,7 @@
 module TypeChecker (Expression, checkTypes) where
 
-import AST hiding (Expression)
-import qualified AST as E
-import Control.Monad.State (State, gets, modify', runState)
+import AST
+import Control.Monad.Trans.State.Strict (State, gets, modify', runState)
 import Data.Map.Strict (Map, empty, insert, lookup)
 import Data.Maybe (fromMaybe)
 import Error
@@ -42,7 +41,7 @@ data Extra = Extra
   }
   deriving (Eq, Show)
 
-type IncompleteExpression = E.Expression Extra
+type IncompleteExpression = ExpressionGeneric Extra
 
 setType :: IncompleteType -> IncompleteExpression -> IncompleteExpression
 setType t = updateExtra (\extra -> extra {extraType = t})
@@ -73,6 +72,12 @@ check e = do
       e <- check (setType expected e)
 
       return (Block es e, getType e)
+    Tuple es -> do
+      es <- mapM check es
+
+      let type_ = incompleteTuple (fmap getType es)
+
+      return (Tuple es, type_)
     Definition name e -> do
       requested <- getRequested name
       e <- check (setType (expected <> requested) e)
@@ -134,7 +139,7 @@ check e = do
 
   return (setType newType (setBase newBase e))
 
-type Expression = E.Expression Type
+type Expression = ExpressionGeneric Type
 
 converge :: IncompleteExpression -> S IncompleteExpression
 converge old = do

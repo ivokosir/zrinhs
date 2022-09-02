@@ -4,7 +4,7 @@ github: "ivokosir/zrin"
 license: BSD3
 author: "Ivo Kosir"
 maintainer: "ivo.kosir93@gmail.com"
-copyright: "2021 Ivo Kosir"
+copyright: "2022 Ivo Kosir"
 
 extra-source-files:
   - README.md
@@ -13,12 +13,12 @@ description: Please see the README on GitHub at <https://github.com/ivokosir/zri
 
 dependencies:
   - base >= 4.7 && < 5
-  - aeson == 1.*
+  - aeson == 2.*
   - bytestring
   - containers
-  - mtl == 2.*
   - optparse-applicative
   - parsec == 3.*
+  - transformers
 
 ghc-options:
   - -W

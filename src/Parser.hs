@@ -1,7 +1,6 @@
 module Parser (Expression, Extra (..), parse) where
 
-import AST hiding (Base, Expression)
-import qualified AST as E
+import AST
 import Error
 import Text.Parsec hiding (parse)
 import qualified Text.Parsec as P (parse)
@@ -12,9 +11,9 @@ import qualified Text.Parsec.Token as P
 
 data Extra = Extra {extraStart :: SourcePos, extraEnd :: SourcePos} deriving (Eq, Show)
 
-type Expression = E.Expression Extra
+type Expression = ExpressionGeneric Extra
 
-type Base = E.Base Extra
+type Base = ExpressionBase Expression
 
 languageDef =
   emptyDef
@@ -63,6 +62,8 @@ natural = P.natural lexer
 
 semiSep = P.semiSep lexer
 
+commaSep = P.commaSep1 lexer
+
 whiteSpace = P.whiteSpace lexer
 
 stringLiteral = P.stringLiteral lexer
@@ -72,7 +73,7 @@ withPosition p = do
   start <- getPosition
   ast <- p
   end <- getPosition
-  return $ E.Expression ast (Extra start end)
+  return $ Expression ast (Extra start end)
 
 formatBlockBody :: [Expression] -> Base
 formatBlockBody [] = Literal CUnit
@@ -92,13 +93,16 @@ blockBody :: Parser [Expression]
 blockBody = semiSep expression
 
 expression :: Parser Expression
-expression = try definition <|> try function <|> ifThenElse <|> operators
+expression = try definition <|> try tuple <|> try function <|> ifThenElse <|> operators
 
 definition :: Parser Expression
 definition = withPosition $ do
   name <- identifier
   reservedOp "="
   Definition name <$> expression
+
+tuple :: Parser Expression
+tuple = withPosition (Tuple <$> parens (commaSep expression))
 
 function :: Parser Expression
 function = withPosition $ do
@@ -122,7 +126,7 @@ operators = buildExpressionParser operatorsTable call
 
 operatorsTable =
   let toOperaton operation lhs rhs =
-        E.Expression
+        Expression
           (Operation operation lhs rhs)
           (Extra (extraStart (extra lhs)) (extraEnd (extra rhs)))
       binary name operation =
@@ -145,7 +149,7 @@ call = do
   ( do
       callee <- call
       return
-        ( E.Expression
+        ( Expression
             (Call caller callee)
             (Extra (extraStart (extra caller)) (extraEnd (extra callee)))
         )

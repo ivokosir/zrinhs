@@ -11,10 +11,10 @@ module CodeGenerator
   )
 where
 
-import AST hiding (Base (..), Expression)
-import qualified AST as E
+import AST hiding (ExpressionBase (..))
+import qualified AST
 import Code
-import Control.Monad.State (State, gets, modify', runState)
+import Control.Monad.Trans.State.Strict (State, gets, modify', runState)
 import Data.Map.Strict (Map, empty, insert, lookup)
 import Data.Maybe (fromMaybe)
 import TypeChecker
@@ -97,7 +97,7 @@ withScope f = do
   return a
 
 generate :: Expression -> S Value
-generate (E.Expression (E.Block es e) _) = do
+generate (Expression (AST.Block es e) _) = do
   withScope
     ( do
         requestedName <- takeRequestedName
@@ -105,7 +105,15 @@ generate (E.Expression (E.Block es e) _) = do
         setRequestedName requestedName
         generate e
     )
-generate (E.Expression (E.Definition name e) _) = do
+generate (Expression (AST.Tuple es) _) = do
+  withScope
+    ( do
+        requestedName <- takeRequestedName
+        vs <- mapM generate es
+        name <- generateName requestedName
+        addInstruction (Instruction name (Struct vs))
+    )
+generate (Expression (AST.Definition name e) _) = do
   parentName <- takeRequestedName
   let bestName = fromMaybe name parentName
   setRequestedName (Just bestName)
@@ -116,7 +124,7 @@ generate (E.Expression (E.Definition name e) _) = do
   setName bestName v
 
   return v
-generate (E.Expression (E.IfThenElse cond then_ else_) _) = do
+generate (Expression (AST.IfThenElse cond then_ else_) _) = do
   requestedName <- takeRequestedName
 
   condValue <- withScope (generate cond)
@@ -135,7 +143,7 @@ generate (E.Expression (E.IfThenElse cond then_ else_) _) = do
 
   phiName <- generateName requestedName
   addInstruction (Instruction phiName (Phi thenValue thenLabel elseValue elseLabel))
-generate (E.Expression (E.Operation op lhs rhs) _) = do
+generate (Expression (AST.Operation op lhs rhs) _) = do
   requestedName <- takeRequestedName
 
   lhsValue <- withScope (generate lhs)
@@ -143,7 +151,7 @@ generate (E.Expression (E.Operation op lhs rhs) _) = do
 
   name <- generateName requestedName
   addInstruction (Instruction name (Binary op lhsValue rhsValue))
-generate (E.Expression (E.Function param body) type_) = do
+generate (Expression (AST.Function param body) type_) = do
   requestedName <- takeRequestedName
   name <- generateName requestedName
 
@@ -153,7 +161,7 @@ generate (E.Expression (E.Function param body) type_) = do
          in s {functions = functions s ++ fs}
     )
   return (Reference name)
-generate (E.Expression (E.Call caller arg) _) = do
+generate (Expression (AST.Call caller arg) _) = do
   requestedName <- takeRequestedName
 
   argValue <- withScope (generate arg)
@@ -161,9 +169,9 @@ generate (E.Expression (E.Call caller arg) _) = do
 
   name <- generateName requestedName
   addInstruction (Instruction name (Call callerValue argValue))
-generate (E.Expression (E.Identifier name) _) =
+generate (Expression (AST.Identifier name) _) =
   gets (fromMaybe (Reference (Name name)) . lookup name . scope)
-generate (E.Expression (E.Literal c) _) = return (Const c)
+generate (Expression (AST.Literal c) _) = return (Const c)
 
 generateFunction :: Name -> Type -> String -> Expression -> [Function]
 generateFunction name type_ param body =

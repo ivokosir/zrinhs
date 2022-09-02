@@ -1,6 +1,6 @@
 module Prettify.Parser (prettify) where
 
-import AST hiding (Expression)
+import AST
 import Data.List (intercalate)
 import Parser
 
@@ -41,6 +41,12 @@ prettify_ indent expression =
                 ++ prettifySub e
                 ++ "\n"
                 ++ indent
+                ++ ")"
+        Tuple es ->
+          let seperator = ",\n" ++ nextIndent
+           in "(\n"
+                ++ nextIndent
+                ++ intercalate seperator (fmap prettifySub es)
                 ++ ")"
         Definition name e -> name ++ " = " ++ prettify_ indent e
         IfThenElse c t e ->
